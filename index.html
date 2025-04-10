@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Image Catalog</title>
+    <style>
+        .catalog {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .search-bar {
+            padding: 8px;
+            width: 200px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .filter-btn {
+            padding: 8px 15px;
+            border: none;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .filter-btn.active {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .catalog-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .catalog-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .catalog-item:hover {
+            transform: scale(1.05);
+        }
+
+        .catalog-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .item-info {
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .catalog-item:hover .item-info {
+            opacity: 1;
+        }
+
+        .zoom-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 90vh;
+            margin: 5vh auto;
+            display: block;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="catalog">
+        <div class="controls">
+            <input type="text" class="search-bar" id="search-bar" placeholder="Search images...">
+            <button class="filter-btn" data-category="all">All</button>
+            <button class="filter-btn" data-category="templates">Templates</button>
+            <button class="filter-btn" data-category="numbered">Numbered</button>
+            <button class="filter-btn" data-category="misc">Miscellaneous</button>
+        </div>
+        <div class="catalog-container" id="catalog-container">
+            <!-- Images will be loaded here -->
+        </div>
+    </div>
+
+    <div id="zoom-modal" class="zoom-modal">
+        <span id="close-btn" class="close">×</span>
+        <img class="modal-content" id="zoomed-image">
+    </div>
+
+    <script>
+        // Your image array transformed into objects with categories
+        const rawImages = ['01.png', '02.png', '03.png', '04.png', '05.png', '06.png', '07.png', '08.png', '09.png', '10.png', '100.png', '101.png', '102.png', '103.png', '104.jpg', '105.png', '106.png', '107.png', '108.png', '109.png', '11.png', '110.png', '111.png', '112.png', '113.png', '114.png', '115.png', '116.png', '117.png', '118.png', '119.png', '12.png', '120.png', '121.png', '122.png', '123.png', '125.png', '126.png', '127.png', '128.png', '129.png', '13.png', '130.png', '131.png', '132.png', '133.png', '134.png', '135.png', '136.png', '137.png', '138.png', '139.png', '14.png', '140.png', '141.png', '142.png', '143.png', '144.png', '145.png', '146.png', '147.png', '148.png', '149.png', '15.png', '150.png', '151.png', '152.png', '153.png', '16.png', '17.png', '18.png', '19.png', '1logo.png', '20.png', '21.png', '22.png', '23.png', '24.png', '25.png', '26.png', '27.png', '28.png', '29.jpg', '30.png', '31.png', '32.png', '33.png', '34.png', '35.png', '36.png', '37.png', '38.png', '39.png', '40.png', '41.png', '42.png', '43.png', '44.png', '45.png', '46.png', '47.png', '48.png', '49.png', '52.png', '53.png', '54.png', '55.png', '56.png', '57.png', '58.png', '59.png', '60.png', '61.png', '62.png', '63.png', '64.png', '65.png', '66.png', '67.png', '68.png', '69.png', '70.png', '71.png', '72.png', '73.png', '74.png', '75.png', '76.png', '77.png', '78.png', '79.png', '80.png', '81.png', '82.png', '83.jpg', '84.png', '85.png', '86.png', '87.png', '88.png', '89.png', '90.png', '91.png', '92.png', '93.png', '94.png', '95.png', '96.png', '97.png', '98.png', '99.png', 'Responsive Hyip Template \u2013 154.png', 'Responsive Hyip Template \u2013 155.png', 'Responsive Hyip Template \u2013 156.png', 'Responsive Hyip Template \u2013 157.png', 'Responsive Hyip Template \u2013 158.png', 'Responsive Hyip Template \u2013 160.png', 'Responsive Hyip Template \u2013 161.png', 'Responsive Hyip Template \u2013 162.png', 'Responsive Hyip Template \u2013 163.png', 'Responsive Hyip Template \u2013 164.png', 'Responsive Hyip Template \u2013 165.png', 'Responsive Hyip Template \u2013 166.png', 'Responsive HYIP Template \u2013 167.png', 'Responsive HYIP Template \u2013 168.png', 'Responsive HYIP Template \u2013 169.png', 'Responsive HYIP Template \u2013 170.png', 'Responsive HYIP Template \u2013 171.png', 'Responsive HYIP Template \u2013 172.png', 'Responsive HYIP Template \u2013 173.png', 'Responsive HYIP Template \u2013 174.png', 'Responsive HYIP Template \u2013 175.png', 'Responsive HYIP Template \u2013 176.png', 'Responsive HYIP Template \u2013 177.png', 'Responsive HYIP Template \u2013 178.png', 'Responsive HYIP Template \u2013 179.png', 'Responsive HYIP Template \u2013 180.png', 'Responsive HYIP Template \u2013 181.png', 'Responsive HYIP Template \u2013 182.png', 'Responsive HYIP Template \u2013 184.png', 'Responsive HYIP Template \u2013 185.png', 'Responsive HYIP Template \u2013 186.png', 'Responsive HYIP Template \u2013 187.png', 'Responsive HYIP Template \u2013 188.png', 'Responsive HYIP Template \u2013 189.png', 'Responsive HYIP Template \u2013 190.png', 'Responsive HYIP Template \u2013 191.png', 'Responsive HYIP Template \u2013 192.png', 'Responsive HYIP Template \u2013 193.png', 'Responsive HYIP Template \u2013 194.png', 'Responsive HYIP Template \u2013 195.png', 'Responsive HYIP Template \u2013 196.png', 'Responsive HYIP Template \u2013 197.png', 'Responsive HYIP Template \u2013 198.png', 'Responsive HYIP Template \u2013 199.png', 'Responsive HYIP Template \u2013 200.png', 'Responsive HYIP Template \u2013 201.png', 'Responsive HYIP Template \u2013 202.png', 'Responsive HYIP Template \u2013 203.png', 'Responsive HYIP Template \u2013 204.png', 'Responsive HYIP Template \u2013 205.png', 'Responsive HYIP Template \u2013 206.png', 'Responsive HYIP Template \u2013 207.png', 'Responsive HYIP Template \u2013 208.png', 'Responsive HYIP Template \u2013 209.png', 'Responsive HYIP Template \u2013 210.png', 'Responsive HYIP Template \u2013 211.png', 'Responsive HYIP Template \u2013 212.png', 'Responsive HYIP Template \u2013 213.png', 'Responsive HYIP Template \u2013 214.png', 'Responsive HYIP Template \u2013 215.jpeg', 'Responsive HYIP Template \u2013 216.png', 'Responsive HYIP Template \u2013 217.png', 'Responsive HYIP Template \u2013 218.png', 'Responsive HYIP Template \u2013 219.png', 'screencapture-localhost-manager-2023-06-12-20_39_58.png'];
+
+        const imageData = rawImages.map(filename => {
+            let category = 'numbered';
+            if (filename.includes('Template')) {
+                category = 'templates';
+            } else if (filename.includes('logo') || filename.includes('screencapture')) {
+                category = 'misc';
+            }
+            return {
+                src: `images/${filename}`, // Assumes images are in an 'images' folder
+                title: filename.replace(/\.(png|jpg|jpeg)$/, ''),
+                category: category
+            };
+        });
+
+        const catalogContainer = document.getElementById('catalog-container');
+        const searchBar = document.getElementById('search-bar');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const modal = document.getElementById('zoom-modal');
+        const zoomedImage = document.getElementById('zoomed-image');
+        const closeBtn = document.getElementById('close-btn');
+
+        function displayImages(images) {
+            catalogContainer.innerHTML = '';
+            images.forEach(image => {
+                const item = document.createElement('div');
+                item.className = 'catalog-item';
+                item.dataset.category = image.category;
+                item.innerHTML = `
+                    <img src="${image.src}" alt="${image.title}">
+                    <div class="item-info">${image.title}</div>
+                `;
+                item.addEventListener('click', () => {
+                    zoomedImage.src = image.src;
+                    modal.style.display = 'block';
+                });
+                catalogContainer.appendChild(item);
+            });
+        }
+
+        // Initial display
+        displayImages(imageData);
+
+        // Search functionality
+        searchBar.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredImages = imageData.filter(image => 
+                image.title.toLowerCase().includes(searchTerm)
+            );
+            displayImages(filteredImages);
+        });
+
+        // Filter functionality
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                const category = button.dataset.category;
+                const filteredImages = category === 'all' 
+                    ? imageData 
+                    : imageData.filter(image => image.category === category);
+                displayImages(filteredImages);
+            });
+        });
+
+        // Modal close functionality
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        // Close modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
